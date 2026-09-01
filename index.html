@@ -78,6 +78,35 @@
   [1200, 3000, 6000].forEach(function(t){ setTimeout(ajusta, t); });
   f.addEventListener('load', function(){ setTimeout(ajusta, 900); });
   window.addEventListener('orientationchange', function(){ setTimeout(ajusta, 400); });
+
+  /* MODO DIAGNOSTICO: abra a mesma URL com ?diag=1 antes do #.
+     O fundo da CASCA fica vermelho, entao qualquer pedaco vermelho na tela e area
+     que o iframe NAO esta cobrindo. Se a faixa vazia continuar creme (sem vermelho),
+     o vazio esta DENTRO do app, nao na casca. O painel fica no TOPO de proposito,
+     pra nao tapar justamente a base que estamos investigando. */
+  if (/(^|[?&])diag/.test(location.search)) {
+    document.documentElement.style.background = '#ff0000';
+    document.body.style.background = '#ff0000';
+    var box = document.createElement('div');
+    box.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:9;background:#000;' +
+      'color:#0f0;font:11px/1.35 ui-monospace,monospace;padding:6px 8px;white-space:pre';
+    var atualiza = function(){
+      var wr = wrap.getBoundingClientRect();
+      var ir = f.getBoundingClientRect();
+      box.textContent =
+        'inner ' + window.innerWidth + 'x' + window.innerHeight +
+        '  vv ' + (window.visualViewport ? Math.round(window.visualViewport.height) : '-') +
+        '  scr ' + screen.width + 'x' + screen.height +
+        '\nwrap top ' + Math.round(wr.top) + '  bottom ' + Math.round(wr.bottom) +
+        '  h ' + Math.round(wr.height) +
+        '\niframe h ' + Math.round(ir.height) + '  bottom ' + Math.round(ir.bottom) +
+        '\nSOBRA EMBAIXO ' + Math.round(window.innerHeight - ir.bottom) + 'px' +
+        '  padTop ' + getComputedStyle(document.body).paddingTop +
+        '\nstandalone ' + (navigator.standalone ? 'sim' : 'nao');
+    };
+    atualiza(); setInterval(atualiza, 1000);
+    document.body.appendChild(box);
+  }
 })();
 </script>
 </body>
