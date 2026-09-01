@@ -15,15 +15,15 @@
 <title>Proteinômetro</title>
 <style>
   html,body{margin:0;height:100%;background:#e9e7dc;overscroll-behavior:none}
-  /* So o TOPO e reservado (Dynamic Island / status bar). Embaixo o app vai ate a
-     borda: reservar ali criava uma faixa morta, e quem cuida do indicador de home
-     e o proprio app, afastando a barra de abas. */
-  body{box-sizing:border-box;
-    padding-top:env(safe-area-inset-top);
-    padding-left:env(safe-area-inset-left);
-    padding-right:env(safe-area-inset-right)}
-  iframe{border:0;display:block;width:100%;height:100%}
-  /* o JS sobrescreve a altura em px (ver ajusta()) */
+  /* O iframe e ANCORADO nas quatro bordas em vez de receber uma altura calculada.
+     Tentativas com height:100% e com px vindos de visualViewport sempre deixavam
+     uma faixa vazia na base; ancorando, a altura vira geometria e nao aritmetica.
+     So o topo recua, pela Dynamic Island / status bar. */
+  iframe{position:fixed; border:0; display:block;
+    top:env(safe-area-inset-top);
+    left:env(safe-area-inset-left);
+    right:env(safe-area-inset-right);
+    bottom:0}
   .aviso{color:#171610;font:16px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;
     padding:28px;max-width:420px;margin:0 auto}
   .aviso b{display:block;font-size:21px;margin-bottom:10px}
@@ -57,32 +57,16 @@
      iframe aninhado ele mede cedo demais e pega so o spinner de carregamento,
      e o app fica preso numa faixa curta com fundo vazio embaixo. Um empurrao de
      layout forca a remedicao. Repetimos porque a carga pode demorar. */
-  /* Altura CRAVADA EM PIXELS a partir da tela real. "height:100%" depende da
-     cadeia de alturas e do inset do topo, e sobrava uma faixa vazia na base.
-     visualViewport e o valor mais fiel no iOS (desconta barras dinamicas). */
-  var alturaUtil = function(){
-    var vv = window.visualViewport;
-    var h = (vv && vv.height) ? vv.height : window.innerHeight;
-    var topo = parseFloat(getComputedStyle(document.body).paddingTop) || 0;
-    return Math.max(320, Math.round(h - topo));
-  };
-  /* NAO dispare um 'resize' sintetico aqui: existe um listener de resize logo
-     abaixo, e um alimenta o outro num laco infinito que trava a pagina em branco.
-     (E era inutil: o evento nao atravessa pro iframe, que e cross-origin.)
-     Mudar a altura ja e o que forca a remedicao la dentro. */
+  /* A altura ja vem das ancoras do CSS. Este empurrao existe so porque o wrapper
+     do Apps Script mede o conteudo UMA vez e, aninhado, mede cedo demais (pega so
+     o spinner). Mexer na ancora de baixo e voltar forca a remedicao la dentro.
+     NAO dispare um 'resize' sintetico: havia um listener de resize aqui e um
+     alimentava o outro num laco infinito que deixava a pagina em branco. */
   var ajusta = function(){
-    var alvoH = alturaUtil();
-    if (f.__h === alvoH) return;           // nada mudou: nao mexe
-    f.style.height = (alvoH - 1) + 'px';   // valor diferente forca o reflow
+    f.style.bottom = '1px';
     f.getBoundingClientRect();
-    f.style.height = alvoH + 'px';
-    f.__h = alvoH;
+    f.style.bottom = '0px';
   };
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', function(){ setTimeout(ajusta, 120); });
-  }
-  window.addEventListener('resize', function(){ setTimeout(ajusta, 120); });
-  ajusta();
   [1200, 3000, 6000].forEach(function(t){ setTimeout(ajusta, t); });
   f.addEventListener('load', function(){ setTimeout(ajusta, 900); });
   window.addEventListener('orientationchange', function(){ setTimeout(ajusta, 400); });
