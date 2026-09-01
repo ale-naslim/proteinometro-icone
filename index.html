@@ -44,6 +44,20 @@
   f.title = 'Proteinômetro';
   f.setAttribute('allow','clipboard-write');
   document.body.appendChild(f);
+
+  /* O wrapper do Apps Script mede a altura do conteudo UMA vez. Dentro de um
+     iframe aninhado ele mede cedo demais e pega so o spinner de carregamento,
+     e o app fica preso numa faixa curta com fundo vazio embaixo. Um empurrao de
+     layout forca a remedicao. Repetimos porque a carga pode demorar. */
+  var ajusta = function(){
+    f.style.height = (window.innerHeight - 1) + 'px';
+    f.getBoundingClientRect();
+    f.style.height = '100%';
+    try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+  };
+  [1200, 3000, 6000].forEach(function(t){ setTimeout(ajusta, t); });
+  f.addEventListener('load', function(){ setTimeout(ajusta, 900); });
+  window.addEventListener('orientationchange', function(){ setTimeout(ajusta, 400); });
 })();
 </script>
 </body>
