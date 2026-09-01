@@ -66,12 +66,17 @@
     var topo = parseFloat(getComputedStyle(document.body).paddingTop) || 0;
     return Math.max(320, Math.round(h - topo));
   };
+  /* NAO dispare um 'resize' sintetico aqui: existe um listener de resize logo
+     abaixo, e um alimenta o outro num laco infinito que trava a pagina em branco.
+     (E era inutil: o evento nao atravessa pro iframe, que e cross-origin.)
+     Mudar a altura ja e o que forca a remedicao la dentro. */
   var ajusta = function(){
     var alvoH = alturaUtil();
-    f.style.height = (alvoH - 1) + 'px';   // muda de valor pra forcar a remedicao
+    if (f.__h === alvoH) return;           // nada mudou: nao mexe
+    f.style.height = (alvoH - 1) + 'px';   // valor diferente forca o reflow
     f.getBoundingClientRect();
     f.style.height = alvoH + 'px';
-    try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+    f.__h = alvoH;
   };
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', function(){ setTimeout(ajusta, 120); });
