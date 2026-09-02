@@ -23,11 +23,15 @@
      e elemento substituido — sem width/height explicitos ele cai no tamanho
      intrinseco (300x150) e as ancoras sao ignoradas. Entao o div faz a geometria
      e o iframe so preenche 100% dele. */
-  #wrap{position:fixed;
-    top:env(safe-area-inset-top);
-    left:env(safe-area-inset-left);
-    right:env(safe-area-inset-right);
-    bottom:0}
+  /* O wrapper vai de borda a borda, SEM reservar o topo. Reservar aqui fazia a
+     pagina do Apps Script calcular o layout com a tela cheia e perder exatamente
+     esse tanto na BASE (medido: tela 852, topo 59, app so 734 -> faixa de 59px).
+     Em Safari, onde nao havia reserva, sempre funcionou. Quem recua o conteudo do
+     topo agora e o APP, com o valor que mandamos por postMessage. */
+  #wrap{position:fixed; top:0; left:0; right:0; bottom:0}
+  /* sonda: le o valor real do recorte do topo pra repassar ao app */
+  #probe{position:absolute;visibility:hidden;pointer-events:none;
+    top:0;left:0;width:1px;padding-top:env(safe-area-inset-top)}
   #wrap iframe{border:0; display:block; width:100%; height:100%}
   .aviso{color:#171610;font:16px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;
     padding:28px;max-width:420px;margin:0 auto}
@@ -38,6 +42,7 @@
 </head>
 <body>
 <div id="wrap"></div>
+<div id="probe"></div>
 <script>
 /* O endereço do app vai depois do # — assim a senha NÃO fica dentro deste
    arquivo, que é público. O iOS guarda a URL inteira (com o #) ao adicionar
@@ -88,9 +93,19 @@
      Converge sozinho: com a extensao O aplicada, altura do wrap = V + O e o app
      recebe V + O - G; pedir O = altura_wrap - altura_app da O = G e fica estavel.
      Sem constante chumbada, entao vale pra qualquer aparelho. */
+  /* Le o recorte do topo (Dynamic Island). env() so funciona aqui, no documento de
+     topo: dentro de iframe ele resolve como 0. */
+  var recorteTopo = function(){
+    var p = document.getElementById('probe');
+    return p ? Math.round(parseFloat(getComputedStyle(p).paddingTop) || 0) : 0;
+  };
+
   window.addEventListener('message', function(ev){
     var d = ev && ev.data;
     if (!d || d.pm !== 'proteinometro-h' || !d.h || !wrap) return;
+    /* ev.source e um handle DIRETO pra janela do app — responde sem depender da
+       hierarquia de frames (a casca nao alcanca o sandbox do Apps Script de outro jeito). */
+    try { ev.source.postMessage({ pm:'proteinometro-safe', top: recorteTopo() }, '*'); } catch(e){}
     var falta = Math.round(wrap.getBoundingClientRect().height - d.h);
     if (falta < 0) falta = 0;
     if (falta > 300) return;                       // valor absurdo: ignora
