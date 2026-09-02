@@ -79,6 +79,25 @@
   f.addEventListener('load', function(){ setTimeout(ajusta, 900); });
   window.addEventListener('orientationchange', function(){ setTimeout(ajusta, 400); });
 
+  /* A pagina do Apps Script embrulha o app num iframe MENOR que a area visivel
+     (medido no iPhone: tela 852, casca 793, app 734 — some ~59px que a pagina do
+     Google reserva). Resultado: a barra de abas do app, em bottom:0, parava antes
+     da borda e sobrava uma faixa clara.
+     O app manda a altura real dele por postMessage (funciona cross-origin) e aqui
+     esticamos o wrapper PRA BAIXO exatamente o que falta — a sobra sai da tela.
+     Converge sozinho: com a extensao O aplicada, altura do wrap = V + O e o app
+     recebe V + O - G; pedir O = altura_wrap - altura_app da O = G e fica estavel.
+     Sem constante chumbada, entao vale pra qualquer aparelho. */
+  window.addEventListener('message', function(ev){
+    var d = ev && ev.data;
+    if (!d || d.pm !== 'proteinometro-h' || !d.h || !wrap) return;
+    var falta = Math.round(wrap.getBoundingClientRect().height - d.h);
+    if (falta < 0) falta = 0;
+    if (falta > 300) return;                       // valor absurdo: ignora
+    var atual = -(parseFloat(wrap.style.bottom) || 0);
+    if (Math.abs(falta - atual) > 1) wrap.style.bottom = (-falta) + 'px';
+  });
+
   /* MODO DIAGNOSTICO: abra a mesma URL com ?diag=1 antes do #.
      O fundo da CASCA fica vermelho, entao qualquer pedaco vermelho na tela e area
      que o iframe NAO esta cobrindo. Se a faixa vazia continuar creme (sem vermelho),
