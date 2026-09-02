@@ -90,13 +90,19 @@
   /* Se a conversa de altura com o app nao acontecer (versao antiga em cache,
      postMessage bloqueado), estica assim mesmo pelo recorte do topo — que foi
      exatamente o tanto que a pagina do Apps Script engoliu na base. */
-  setTimeout(function(){
-    if (wrap && !wrap.style.bottom) {
-      var p = document.getElementById('probe');
-      var t = p ? Math.round(parseFloat(getComputedStyle(p).paddingTop) || 0) : 0;
-      if (t > 0) wrap.style.bottom = (-t) + 'px';
-    }
-  }, 3000);
+  /* BUG PAGO: a condicao era `!wrap.style.bottom`, mas o ajuste automatico grava
+     "0px" quando calcula zero — string NAO vazia — entao a rede de seguranca nunca
+     disparava. Agora comparamos o VALOR, nao a existencia da string. */
+  var redeDeSeguranca = function(){
+    if (!wrap) return;
+    var aplicado = -(parseFloat(wrap.style.bottom) || 0);
+    if (aplicado > 0) return;                 // ja ajustado pela conversa com o app
+    var p = document.getElementById('probe');
+    var t = p ? Math.round(parseFloat(getComputedStyle(p).paddingTop) || 0) : 0;
+    if (t > 0) wrap.style.bottom = (-t) + 'px';
+  };
+  setTimeout(redeDeSeguranca, 2500);
+  setTimeout(redeDeSeguranca, 6000);
 
   /* A pagina do Apps Script embrulha o app num iframe MENOR que a area visivel
      (medido no iPhone: tela 852, casca 793, app 734 — some ~59px que a pagina do
