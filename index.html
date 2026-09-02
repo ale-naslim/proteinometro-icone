@@ -64,7 +64,7 @@
   var f = document.createElement('iframe');
   f.src = alvo;
   f.title = 'Proteinômetro';
-  f.setAttribute('allow','clipboard-write');
+  f.setAttribute('allow','clipboard-write; camera; microphone');
   (document.getElementById('wrap') || document.body).appendChild(f);
 
   /* O wrapper do Apps Script mede a altura do conteudo UMA vez. Dentro de um
